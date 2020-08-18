@@ -35,7 +35,7 @@ pub trait CharBool: Sized {
     }
 
     fn exact(self, n: usize) -> CharExact<Self> {
-        CharExact { a: self, n }
+        CharExact { cb: self, n }
     }
 }
 
@@ -196,6 +196,21 @@ where
         ])
     }
 }
+pub struct CharsExcept<A: CharBool, E: CharBool> {
+    a: A,
+    e: E,
+}
+
+impl<A: CharBool, E: CharBool> CharBool for CharsExcept<A, E> {
+    fn char_bool(&self, c: char) -> bool {
+        self.a.char_bool(c) && !self.e.char_bool(c)
+    }
+    fn expected(&self) -> Expected {
+        self.a
+            .expected()
+            .join(Expected::Not(Box::new(self.e.expected())))
+    }
+}
 
 pub fn do_one_char<'a, CB: CharBool>(i: &PIter<'a>, cb: &CB) -> ParseRes<'a, char> {
     let mut i2 = i.clone();
@@ -223,29 +238,30 @@ pub fn one_char<C: CharBool>(cb: C) -> OneChar<C> {
 }
 
 pub fn do_chars<'a, CB: CharBool>(
-    it: &PIter<'a>,
+    i: &PIter<'a>,
     cb: &CB,
     min: usize,
     exact: bool,
-) -> ParseRes<'a, &'a str> {
-    let mut it = it.clone();
+) -> ParseRes<'a, ()> {
+    let mut it = i.clone();
     loop {
         let it2 = it.clone();
+        let mut done = 0;
         match it.next() {
             Some(c) if cb.char_bool(c) => {
-                res.push(c);
+                done += 1;
+                if done == min && exact {
+                    return Ok((it, (), None));
+                }
             }
             Some(_) | None => {
-                if res.len() >= min {
-                    let eo = it2.err_oc(cb);
-                    return Ok((it2, res, eo));
+                if done >= min {
+                    let eo = Some(it2.err(cb.expected()));
+                    return Ok((it2, (), eo));
                 } else {
                     return it2.err_r(cb.expected());
                 }
             }
-        }
-        if res.len() == min && exact {
-            return Ok((it, res, None));
         }
     }
 }
@@ -256,8 +272,8 @@ pub struct CharStar<C: CharBool> {
 
 impl<'a, CB: CharBool> Parser<'a> for CharStar<CB> {
     type Out = &'a str;
-    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_chars(it, &self.cb, 0, false)
+    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        do_chars(i, &self.cb, 0, false).map_str(i)
     }
 }
 
@@ -268,35 +284,21 @@ pub struct CharPlus<C: CharBool> {
 
 impl<'a, CB: CharBool> Parser<'a> for CharPlus<CB> {
     type Out = &'a str;
-    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, &'a str> {
-        do_chars(it, &self.cb, 1, false)
-    }
-}
-
-pub struct CharsExcept<A: CharBool, E: CharBool> {
-    a: A,
-    e: E,
-}
-
-impl<A: CharBool, E: CharBool> CharBool for CharsExcept<A, E> {
-    fn char_bool(&self, c: char) -> bool {
-        self.a.char_bool(c) && !self.e.char_bool(c)
-    }
-    fn expected(&self) -> Expected {
-        self.a.expected().or(Expected::except(self.e.expected()))
+    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, &'a str> {
+        do_chars(i, &self.cb, 1, false).map_str(i)
     }
 }
 
 #[derive(Clone)]
-pub struct CharExact<A: CharBool> {
-    a: A,
+pub struct CharExact<CB: CharBool> {
+    cb: CB,
     n: usize,
 }
 
 impl<'a, A: CharBool> Parser<'a> for CharExact<A> {
     type Out = &'a str;
-    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_chars(it, &self.a, self.n, true)
+    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        do_chars(i, &self.cb, self.n, true).map_str(i)
     }
 }
 
@@ -308,8 +310,8 @@ pub struct CharMin<A: CharBool> {
 
 impl<'a, A: CharBool> Parser<'a> for CharMin<A> {
     type Out = &'a str;
-    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_chars(it, &self.cb, self.min, false)
+    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        do_chars(i, &self.cb, self.min, false).map_str(i)
     }
 }
 

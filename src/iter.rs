@@ -21,6 +21,13 @@ impl<'a> PIter<'a> {
         self.it.as_str()
     }
 
+    pub fn str_to(&self, id: Option<usize>) -> &'a str {
+        match (self.index(), id) {
+            (Some(s), Some(f)) => &self.it.as_str()[..(f - s)],
+            _ => self.it.as_str(),
+        }
+    }
+
     pub fn err(&self, exp: Expected) -> PErr<'a> {
         PErr {
             exp,
@@ -50,6 +57,10 @@ impl<'a> PIter<'a> {
     }
     pub fn index(&self) -> Option<usize> {
         self.it.clone().next().map(|(i, _)| i)
+    }
+
+    pub fn next_i(&mut self) -> Option<(usize, char)> {
+        self.it.next()
     }
 }
 

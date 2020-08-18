@@ -1,6 +1,27 @@
 use crate::err::*;
 use crate::iter::*;
+
 pub type ParseRes<'a, V> = Result<(PIter<'a>, V, Option<PErr<'a>>), PErr<'a>>;
+
+pub trait ResTrait<'a> {
+    fn map_str(self, start: &PIter<'a>) -> ParseRes<'a, &'a str>;
+    fn map_string(self, start: &PIter<'a>) -> ParseRes<'a, String>;
+}
+
+impl<'a, V> ResTrait<'a> for ParseRes<'a, V> {
+    fn map_str(self, start: &PIter<'a>) -> ParseRes<'a, &'a str> {
+        self.map(|(i2, _, e)| {
+            let s = start.str_to(i2.index());
+            (i2, s, e)
+        })
+    }
+    fn map_string(self, start: &PIter<'a>) -> ParseRes<'a, String> {
+        self.map(|(i2, _, e)| {
+            let s = start.str_to(i2.index());
+            (i2, s.to_string(), e)
+        })
+    }
+}
 
 pub trait Parser<'a> {
     type Out;

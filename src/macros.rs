@@ -34,7 +34,7 @@ macro_rules! parser {
             type Out = $ot;
             ///Parse run the main parser
             fn parse<'a>(&self, it: &LCChars<'a>) -> ParseRes<'a, Self::Out> {
-                let name_e = it.err_p(self);
+                let name_e = it.err_s($exp);
                 match (&$x).parse(it){
                     Ok(v)=> Ok(v),
                     Err(e)=> match (e.index,name_e.index) {
@@ -42,10 +42,6 @@ macro_rules! parser {
                         _=>Err(e.join(name_e)),
                     }
                 }
-            }
-            ///The expected return type
-            fn expected(&self) -> Expected {
-                $exp
             }
         }
     };
@@ -125,10 +121,10 @@ macro_rules! enum_parser{
 #[macro_export]
 macro_rules! char_bool {
     ($id:ident,$x:expr) => {
-        char_bool!($id, $x, Expected::CharIn(stringify!($id)));
+        char_bool!($id, $x, Expected::Str(stringify!($id)));
     };
     ($id:ident,$x:expr,$s:literal) => {
-        char_bool!($id, $x, Expected::CharIn($s));
+        char_bool!($id, $x, Expected::Char($s));
     };
     ($id:ident,$x:expr,$exp:expr) => {
         #[derive(Copy, Clone)]
@@ -164,9 +160,10 @@ macro_rules! or_ig{
     ($s:expr,$($x:expr),* $(,)?) => { $s.ig()$(.or($x.ig()))*;};
 }
 
+/*
 #[cfg(test)]
 mod test {
-
+    use super::*;
     fn size_of<T: Sized>(_t: &T) -> usize {
         std::mem::size_of::<T>()
     }
@@ -193,11 +190,11 @@ mod test {
 
     #[test]
     pub fn charbool_macro_makes_parser() {
-        use Expected::*;
+        use err::Expected::*;
         let p = (HOT, MNUM);
         assert_eq!(std::mem::size_of::<(HOT, MNUM)>(), 0);
         assert_eq!(p.plus().parse_s("09h3f"), Ok("09h3".to_string()));
-        assert_eq!(p.expected(), OneOf(vec![CharIn("HOT"), CharIn("MNUM")]));
+        assert_eq!(p.expected(), OneOf(vec![Char("HOT"), Char("MNUM")]));
         assert_eq!(size_of(&p), 0);
     }
     #[derive(Clone, PartialEq, Debug)]
@@ -226,3 +223,4 @@ mod test {
         assert_eq!(v2, vec![Oper::Sub, Oper::Add, Oper::Sub]);
     }
 }
+*/
