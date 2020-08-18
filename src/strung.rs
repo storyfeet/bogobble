@@ -4,7 +4,7 @@ use crate::parser::*;
 /// ```rust
 /// use bogobble::*;
 /// let p = str_range(("abc".plus(),"def".plus()));
-/// assert_eq!(p.parse_s("aacfc_gp"),Ok("aacfc"));
+/// assert_eq!(p.parse_s("aacfc_gp"),Ok("aacf"));
 /// ```
 pub fn str_range<'a, P: Parser<'a>>(p: P) -> StrRange<P> {
     StrRange { p }

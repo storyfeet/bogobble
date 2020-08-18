@@ -8,12 +8,12 @@
 /// Makes zero sized parsers based on the expression given and potentially the return type given.
 
 /// ```rust
-/// use gobble::*;
+/// use bogobble::*;
 /// parser!{
-///     (Cat->String),
+///     (Cat->&'a str),
 ///     "cat".plus(),
 /// }
-/// assert_eq!(Cat.parse_s("ctar"),Ok("cta".to_string()));
+/// assert_eq!(Cat.parse_s("ctar"),Ok("cta"));
 /// ```
 #[macro_export]
 macro_rules! parser {
@@ -21,7 +21,7 @@ macro_rules! parser {
         parser!(($id->&'static str) $x);
     };
     ($($doc:literal $(,)?)? ($id:ident -> $ot:ty) $(,)? $x:expr $(,)?) => {
-        parser!($($doc)? ($id->$ot) $x, Expected::Str(stringify!($id)));
+        parser!($($doc)? ($id->$ot) $x, stringify!($id));
     };
     ($id:ident,$x:expr,$exp:expr) => {
         parser!(($id->&'static str) $x, $exp);
@@ -30,15 +30,15 @@ macro_rules! parser {
         $(#[doc=$doc])?
         #[derive(Copy, Clone)]
         pub struct $id;
-        impl Parser for $id {
+        impl <'a> Parser<'a> for $id {
             type Out = $ot;
             ///Parse run the main parser
-            fn parse<'a>(&self, it: &LCChars<'a>) -> ParseRes<'a, Self::Out> {
+            fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
                 let name_e = it.err_s($exp);
                 match (&$x).parse(it){
                     Ok(v)=> Ok(v),
                     Err(e)=> match (e.index,name_e.index) {
-                        (Some(ei),Some(ii)) if (ii == ei) => it.err_rp(self),
+                        (Some(ei),Some(ii)) if (ii == ei) => Err(it.err_s($exp)),
                         _=>Err(e.join(name_e)),
                     }
                 }
@@ -70,58 +70,10 @@ macro_rules! as_id {
     };
 }
 
-/// ```rust
-///
-/// use gobble::*;
-/// mod scoper{
-///     // had to make a new scope for the doc test but it shouldn't be needed
-///     // from outer crates
-///     use gobble::*;
-///     //declare the enum
-///     #[derive(Clone, PartialEq, Debug)]
-///     pub enum Oper {
-///         Add,
-///         Sub,
-///         Div,
-///         Mul,
-///         Var(String),
-///     }
-///     
-///     enum_parser! { (OPER,oper,Oper) =>
-///         ((ADD->Oper::Add) '+'),
-///         ((SUB->Oper::Sub) '-'),
-///         ((DIV->Oper::Div) '/'),
-///         ((MUL->Oper::Mul) '*'),
-///         (VAR , Alpha.plus().map(|s|Oper::Var(s))),
-///     }
-/// }
-/// use scoper::*;
-///
-/// let v = star(scoper::OPER).parse_s("-cat").unwrap();
-/// assert_eq!( v, vec![ Oper::Sub, Oper::Var("cat".to_string()) ]);
-///
-/// let v2 = star(or!(oper::ADD, oper::SUB)).parse_s("-+-hello").unwrap();
-/// assert_eq!(v2, vec![Oper::Sub, Oper::Add, Oper::Sub]);
-///
-///
-/// ```
-#[macro_export]
-macro_rules! enum_parser{
-    ( ($name:ident,$mod:ident,$ot:ty)=>$($mbit:tt),* $(,)?) =>{
-        pub mod $mod{
-            use $crate::*;
-            use super::*;
-            $( parser_as!{($ot),$mbit})*
-            parser!{ ($name->$ot) ( or!{ $(as_id!{$mbit}),*} )}
-        }
-        pub use $mod::$name;
-    }
-}
-
 #[macro_export]
 macro_rules! char_bool {
     ($id:ident,$x:expr) => {
-        char_bool!($id, $x, Expected::Str(stringify!($id)));
+        char_bool!($id, $x, Expected::CharIn(stringify!($id)));
     };
     ($id:ident,$x:expr,$s:literal) => {
         char_bool!($id, $x, Expected::Char($s));
@@ -147,7 +99,7 @@ macro_rules! char_bools {
 
 /// a macro replacement for numbered or statements.
 /// ```rust
-/// use gobble::*;
+/// use bogobble::*;
 /// assert_eq!(or!("cat","dog","car",).parse_s("catdogman "),Ok("cat"));
 /// ```
 #[macro_export]
@@ -160,7 +112,6 @@ macro_rules! or_ig{
     ($s:expr,$($x:expr),* $(,)?) => { $s.ig()$(.or($x.ig()))*;};
 }
 
-/*
 #[cfg(test)]
 mod test {
     use super::*;
@@ -193,34 +144,8 @@ mod test {
         use err::Expected::*;
         let p = (HOT, MNUM);
         assert_eq!(std::mem::size_of::<(HOT, MNUM)>(), 0);
-        assert_eq!(p.plus().parse_s("09h3f"), Ok("09h3".to_string()));
-        assert_eq!(p.expected(), OneOf(vec![Char("HOT"), Char("MNUM")]));
+        assert_eq!(p.plus().parse_s("09h3f"), Ok("09h3"));
+        assert_eq!(p.expected(), OneOf(vec![CharIn("HOT"), CharIn("MNUM")]));
         assert_eq!(size_of(&p), 0);
     }
-    #[derive(Clone, PartialEq, Debug)]
-    pub enum Oper {
-        Add,
-        Sub,
-        Div,
-        Mul,
-        Var(String),
-    }
-
-    enum_parser! { (OPER,oper,Oper) =>
-        ((ADD->Oper::Add) '+'),
-        ((SUB->Oper::Sub) '-'),
-        ((DIV->Oper::Div) '/'),
-        ((MUL->Oper::Mul) '*'),
-        (VAR , Alpha.plus().map(|s|Oper::Var(s))),
-    }
-
-    #[test]
-    fn test_enum_group_make_parser() {
-        let v = star(OPER).parse_s("-cat").unwrap();
-        assert_eq!(v, vec![Oper::Sub, Oper::Var("cat".to_string())]);
-
-        let v2 = star(or!(oper::ADD, oper::SUB)).parse_s("-+-hello").unwrap();
-        assert_eq!(v2, vec![Oper::Sub, Oper::Add, Oper::Sub]);
-    }
 }
-*/

@@ -4,10 +4,13 @@ use std::fmt;
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 pub enum Expected {
     Nil,
+    EOI,
     Not(Box<Expected>),
     Char(char),
+    CharIn(&'static str),
     Str(&'static str),
     OneOf(Vec<Expected>),
+    Keyword(Box<Expected>),
 }
 impl Expected {
     pub fn join(self, b: Self) -> Self {
@@ -40,9 +43,12 @@ impl fmt::Display for Expected {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Expected::Nil => write!(f, "NIL"),
+            Expected::EOI => write!(f, "EOI"),
             Expected::Not(b) => write!(f, "Not({})", b),
             Expected::Char(c) => write!(f, "{}", c),
+            Expected::CharIn(s) => write!(f, "Char In '{}'", s),
             Expected::Str(s) => write!(f, "{}", s),
+            Expected::Keyword(s) => write!(f, "keyword {}", s),
             Expected::OneOf(v) => {
                 write!(f, "One of [")?;
                 let mut coma = "";

@@ -23,11 +23,23 @@ pub trait CharBool: Sized {
     fn plus(self) -> CharPlus<Self> {
         CharPlus { cb: self }
     }
+
+    fn istar(self) -> ICharStar<Self> {
+        ICharStar { cb: self }
+    }
+    fn iplus(self) -> ICharPlus<Self> {
+        ICharPlus { cb: self }
+    }
+
+    fn iexact(self, n: usize) -> ICharExact<Self> {
+        ICharExact { cb: self, n }
+    }
+
     ///```rust
-    /// use gobble::*;
+    /// use bogobble::*;
     /// assert_eq!(
     ///     Any.except("_").min_n(4).parse_s("asedf_wes"),
-    ///     Ok("asedf".to_string())
+    ///     Ok("asedf")
     ///     );
     ///```
     fn except<E: CharBool>(self, e: E) -> CharsExcept<Self, E> {
@@ -90,7 +102,7 @@ impl CharBool for &'static str {
         self.contains(c)
     }
     fn expected(&self) -> Expected {
-        Expected::Str(self)
+        Expected::CharIn(self)
     }
 }
 
@@ -244,11 +256,12 @@ pub fn do_chars<'a, CB: CharBool>(
     exact: bool,
 ) -> ParseRes<'a, ()> {
     let mut it = i.clone();
+    let mut done = 0;
     loop {
         let it2 = it.clone();
-        let mut done = 0;
         match it.next() {
             Some(c) if cb.char_bool(c) => {
+                println!("do_chars CHAR = {}", c);
                 done += 1;
                 if done == min && exact {
                     return Ok((it, (), None));
@@ -263,6 +276,37 @@ pub fn do_chars<'a, CB: CharBool>(
                 }
             }
         }
+    }
+}
+
+pub struct ICharStar<C: CharBool> {
+    cb: C,
+}
+impl<'a, CB: CharBool> Parser<'a> for ICharStar<CB> {
+    type Out = ();
+    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        do_chars(i, &self.cb, 0, false)
+    }
+}
+
+pub struct ICharPlus<C: CharBool> {
+    cb: C,
+}
+impl<'a, CB: CharBool> Parser<'a> for ICharPlus<CB> {
+    type Out = ();
+    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        do_chars(i, &self.cb, 1, false)
+    }
+}
+
+pub struct ICharExact<C: CharBool> {
+    cb: C,
+    n: usize,
+}
+impl<'a, CB: CharBool> Parser<'a> for ICharExact<CB> {
+    type Out = ();
+    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        do_chars(i, &self.cb, self.n, true)
     }
 }
 #[derive(Clone)]
