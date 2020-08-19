@@ -114,7 +114,6 @@ macro_rules! or_ig{
 
 #[cfg(test)]
 mod test {
-    use super::*;
     fn size_of<T: Sized>(_t: &T) -> usize {
         std::mem::size_of::<T>()
     }
