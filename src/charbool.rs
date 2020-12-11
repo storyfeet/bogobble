@@ -49,6 +49,10 @@ pub trait CharBool: Sized {
     fn exact(self, n: usize) -> CharExact<Self> {
         CharExact { cb: self, n }
     }
+
+    fn until<'a, P: Parser<'a>>(self, end: P) -> CharUntil<Self, P> {
+        CharUntil { a: self, end }
+    }
 }
 
 pub struct CharNot<C: CharBool> {
@@ -356,6 +360,29 @@ impl<'a, A: CharBool> Parser<'a> for CharMin<A> {
     type Out = &'a str;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
         do_chars(i, &self.cb, self.min, false).map_str(i)
+    }
+}
+
+#[derive(Clone)]
+pub struct CharUntil<A: CharBool, E> {
+    a: A,
+    end: E,
+}
+
+impl<'a, A: CharBool, E: Parser<'a>> Parser<'a> for CharUntil<A, E> {
+    type Out = (&'a str, E::Out);
+    fn parse(&self, i_start: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        let mut it = i_start.clone();
+        let mut a_stop = it.index();
+        loop {
+            match self.end.parse(&it) {
+                Ok((i, v, e)) => return Ok((i, (i_start.str_to(a_stop), v), e)),
+                Err(e1) => match it.next() {
+                    Some(c) if self.a.char_bool(c) => a_stop = it.index(),
+                    _ => return Err(e1.join(it.err(self.a.expected()))),
+                },
+            }
+        }
     }
 }
 
