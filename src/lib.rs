@@ -13,6 +13,7 @@ pub mod parser;
 pub mod reader;
 pub mod repeater;
 pub mod select;
+pub mod strings;
 pub mod strung;
 pub mod traits;
 pub mod tuple;
