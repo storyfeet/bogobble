@@ -1,7 +1,7 @@
 use crate::traits::*;
-use std::fmt::Display;
+//use std::convert::Into;
 
-pub fn strings_plus_until<A: OParser<C>, B: OParser<D>, C: Display, D>(
+pub fn strings_plus_until<A: OParser<C>, B: OParser<D>, C: AsRef<str>, D>(
     a: A,
     b: B,
 ) -> StringsPlusUntil<A, B> {
@@ -13,7 +13,31 @@ pub struct StringsPlusUntil<A, B> {
     b: B,
 }
 
-pub fn do_strings_until<'a, A: Parser<'a, Out = C>, B: Parser<'a>, C: Display>(
+impl<'a, A: Parser<'a, Out = String>, B: Parser<'a>> Parser<'a> for StringsPlusUntil<A, B> {
+    type Out = (String, B::Out);
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        do_strings_until(it, &self.a, &self.b, 1)
+    }
+}
+pub fn strings_star_until<A: OParser<C>, B: OParser<D>, C: AsRef<str>, D>(
+    a: A,
+    b: B,
+) -> StringsPlusUntil<A, B> {
+    StringsPlusUntil { a, b }
+}
+
+pub struct StringsStarUntil<A, B> {
+    a: A,
+    b: B,
+}
+impl<'a, A: Parser<'a, Out = String>, B: Parser<'a>> Parser<'a> for StringsStarUntil<A, B> {
+    type Out = (String, B::Out);
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        do_strings_until(it, &self.a, &self.b, 0)
+    }
+}
+
+pub fn do_strings_until<'a, A: Parser<'a, Out = C>, B: Parser<'a>, C: AsRef<str>>(
     it: &PIter<'a>,
     a: &A,
     b: &B,
@@ -33,7 +57,7 @@ pub fn do_strings_until<'a, A: Parser<'a, Out = C>, B: Parser<'a>, C: Display>(
         };
         match a.parse(&it) {
             Ok((nit, v, _e)) => {
-                res.push_str(&v);
+                res.push_str(v.as_ref());
                 it = nit;
                 done += 1;
             }
@@ -46,30 +70,26 @@ pub fn do_strings_until<'a, A: Parser<'a, Out = C>, B: Parser<'a>, C: Display>(
     }
 }
 
-impl<'a, A: Parser<'a, Out = String>, B: Parser<'a>> Parser<'a> for StringsPlusUntil<A, B> {
-    type Out = (String, B::Out);
-    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_strings_until(it, &self.a, &self.b, 1)
-    }
-}
-
-pub fn strings_plus<A: Parser<Out = String>>(a: A) -> StringsPlus<A> {
+pub fn strings_plus<A: OParser<I>, I: Into<String>>(a: A) -> StringsPlus<A> {
     StringsPlus { a }
 }
 
-pub struct StringsPlus<A: Parser<Out = String>> {
+pub struct StringsPlus<A> {
     a: A,
 }
 
-impl<A: Parser<Out = String>> Parser for StringsPlus<A> {
+impl<'a, A: Parser<'a>> Parser<'a> for StringsPlus<A>
+where
+    A::Out: AsRef<str>,
+{
     type Out = String;
-    fn parse<'a>(&self, it: &LCChars<'a>) -> ParseRes<'a, String> {
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, String> {
         let mut res = String::new();
         let mut it = it.clone();
         loop {
             match self.a.parse(&it) {
                 Ok((i, v, _)) => {
-                    res.push_str(&v);
+                    res.push_str(v.as_ref());
                     it = i;
                 }
                 Err(e) => {

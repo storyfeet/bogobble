@@ -52,6 +52,8 @@ pub trait Parser<'a>: Sized {
         or(self, b)
     }
 
+    fn asv<V: Clone>(self, v: V) -> Asv<Self, V> {}
+
     fn map<B, F: Fn(Self::Out) -> B>(self, f: F) -> Map<Self, F> {
         map(self, f)
     }

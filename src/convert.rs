@@ -2,6 +2,22 @@ use crate::err::*;
 use crate::iter::*;
 use crate::parser::*;
 
+pub fn asv<A: OParser<C>, V: Clone, C>(a: A, v: V) -> Asv<A, V> {
+    Asv { a, v }
+}
+
+pub struct Asv<A, V: Clone> {
+    a: A,
+    v: V,
+}
+
+impl<'a, A: Parser<'a>, V: Clone> Parser<'a> for Asv<A, V> {
+    type Out = V;
+    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, V> {
+        self.a.parse(i).map(|(i, _, e)| (i, self.v.clone(), e))
+    }
+}
+
 pub fn map<'a, A: Parser<'a>, F: Fn(A::Out) -> V, V>(a: A, f: F) -> Map<A, F> {
     Map { a, f }
 }
