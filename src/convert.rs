@@ -2,7 +2,7 @@ use crate::err::*;
 use crate::iter::*;
 use crate::parser::*;
 
-pub fn asv<A: OParser<C>, V: Clone, C>(a: A, v: V) -> Asv<A, V> {
+pub fn asv<'a, A: Parser<'a>, V: Clone>(a: A, v: V) -> Asv<A, V> {
     Asv { a, v }
 }
 

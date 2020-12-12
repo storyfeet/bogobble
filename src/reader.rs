@@ -1,5 +1,5 @@
 use crate::charbool::*;
-use crate::combi::*;
+//use crate::combi::*;
 use crate::err::*;
 use crate::iter::*;
 use crate::parser::*;
@@ -67,8 +67,19 @@ pub fn pos<'a, P: Parser<'a>>(p: P) -> PPos<P> {
     PPos { p }
 }
 
-pub fn ws__<P: OParser<V>, V>(p: P) -> impl OParser<V> {
-    wrap(WS.istar(), p)
+pub fn ws__<P: OParser<V>, V>(p: P) -> WS__<P> {
+    WS__ { p }
+}
+
+pub struct WS__<P> {
+    p: P,
+}
+
+impl<'a, P: Parser<'a>> Parser<'a> for WS__<P> {
+    type Out = P::Out;
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        WS.istar().parse(it).ig_then(&self.p).then_ig(&(WS.istar()))
+    }
 }
 
 pub fn ws_<P: OParser<V>, V>(p: P) -> impl OParser<V> {

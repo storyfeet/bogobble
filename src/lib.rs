@@ -27,6 +27,7 @@ pub use parser::*;
 pub use reader::*;
 pub use repeater::*;
 pub use select::*;
+pub use strings::*;
 pub use strung::*;
 pub use tuple::*;
 

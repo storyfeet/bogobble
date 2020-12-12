@@ -19,6 +19,9 @@ pub trait ResTrait<'a>: Sized {
             None => self,
         }
     }
+    fn then<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, (Self::Val, P::Out)>;
+    fn then_ig<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, Self::Val>;
+    fn ig_then<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, P::Out>;
 }
 
 impl<'a, V> ResTrait<'a> for ParseRes<'a, V> {
@@ -34,6 +37,24 @@ impl<'a, V> ResTrait<'a> for ParseRes<'a, V> {
     }
     fn join_err(self, e2: PErr<'a>) -> Self {
         self.map_err(|e| e.join(e2))
+    }
+    fn then<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, (V, P::Out)> {
+        match self {
+            Ok((i, av, _)) => p.parse(&i).map(|(i, pv, e)| (i, (av, pv), e)),
+            Err(e) => Err(e),
+        }
+    }
+    fn then_ig<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, V> {
+        match self {
+            Ok((i, av, _)) => p.parse(&i).map(|(i, _, e)| (i, av, e)),
+            Err(e) => Err(e),
+        }
+    }
+    fn ig_then<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, P::Out> {
+        match self {
+            Ok((i, _, _)) => p.parse(&i),
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -52,7 +73,9 @@ pub trait Parser<'a>: Sized {
         or(self, b)
     }
 
-    fn asv<V: Clone>(self, v: V) -> Asv<Self, V> {}
+    fn asv<V: Clone>(self, v: V) -> Asv<Self, V> {
+        asv(self, v)
+    }
 
     fn map<B, F: Fn(Self::Out) -> B>(self, f: F) -> Map<Self, F> {
         map(self, f)
