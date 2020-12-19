@@ -10,6 +10,7 @@ pub mod convert;
 pub mod err;
 pub mod iter;
 pub mod parser;
+pub mod partial;
 pub mod reader;
 pub mod repeater;
 pub mod select;
