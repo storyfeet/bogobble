@@ -1,13 +1,14 @@
 use crate::traits::*;
 use crate::EOI;
+pub mod charbool;
 
 #[derive(Debug, Clone)]
 pub struct PosTree<I> {
     start: Option<usize>,
     fin: Option<usize>,
-    complete: bool,
-    item: I,
-    children: Vec<PosTree<I>>,
+    pub complete: bool,
+    pub item: I,
+    pub children: Vec<PosTree<I>>,
 }
 
 impl<I> PosTree<I> {
@@ -32,15 +33,29 @@ impl<I> PosTree<I> {
         }
     }
 
-    fn incomplete(mut self) -> Self {
+    pub fn incomplete(mut self) -> Self {
         self.complete = false;
         self
     }
 
-    fn push(mut self, b: Self) -> Self {
+    pub fn push(mut self, b: Self) -> Self {
         self.fin = b.fin;
         self.children.push(b);
         self
+    }
+
+    ///Grab str from reference between points
+    ///panics if str not long enough
+    pub fn on_str<'a>(&self, s: &'a str) -> &'a str {
+        match (self.start, self.fin) {
+            (Some(a), Some(b)) => &s[a..b],
+            (Some(a), _) => &s[a..],
+            _ => "",
+        }
+    }
+
+    pub fn str_len(&self, s: &str) -> usize {
+        self.on_str(s).len()
     }
 }
 
@@ -169,6 +184,48 @@ impl<'a, I: Clone, P: Parser<'a, Out = PosTree<I>>> Parser<'a> for PMaybe<P, I> 
 
 pub fn pmaybe<'a, P: Parser<'a, Out = PosTree<I>>, I: Clone>(p: P, i: I) -> PMaybe<P, I> {
     PMaybe { p, i }
+}
+
+pub struct PosVecParse<P, I> {
+    p: P,
+    i: I,
+}
+
+pub fn vpos<'a, P: Parser<'a, Out = Vec<PosTree<I>>>, I: Clone>(p: P, i: I) -> PosVecParse<P, I> {
+    PosVecParse { p, i }
+}
+
+impl<'a, P: Parser<'a, Out = Vec<PosTree<I>>>, I: Clone> Parser<'a> for PosVecParse<P, I> {
+    type Out = PosTree<I>;
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        self.p
+            .parse(it)
+            .map(|(i2, vc, e)| {
+                let complete = vc
+                    .get(vc.len() - 1)
+                    .map(|c| c.complete)
+                    .unwrap_or_else(|| EOI.parse(&i2).is_ok());
+                let res = PosTree {
+                    start: it.index(),
+                    fin: i2.index(),
+                    item: self.i.clone(),
+                    complete,
+                    children: vc,
+                };
+                (i2, res, e)
+            })
+            .or_else(|e| {
+                EOI.parse(it)
+                    .map_v(|_| PosTree {
+                        start: it.index(),
+                        fin: it.index(),
+                        item: self.i.clone(),
+                        complete: false,
+                        children: Vec::new(),
+                    })
+                    .map_err(|_| e)
+            })
+    }
 }
 
 #[macro_export]

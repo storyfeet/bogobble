@@ -4,6 +4,7 @@ use std::str::CharIndices;
 
 #[derive(Debug, Clone)]
 pub struct PIter<'a> {
+    orig: &'a str,
     it: CharIndices<'a>,
     l: usize,
     c: usize,
@@ -12,11 +13,17 @@ pub struct PIter<'a> {
 impl<'a> PIter<'a> {
     pub fn new(s: &'a str) -> Self {
         PIter {
+            orig: s,
             it: s.char_indices(),
             l: 0,
             c: 0,
         }
     }
+
+    pub fn orig_str(&self) -> &'a str {
+        self.orig
+    }
+
     pub fn as_str(&self) -> &'a str {
         self.it.as_str()
     }
