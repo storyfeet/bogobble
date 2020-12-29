@@ -69,6 +69,9 @@ impl<'a> PIter<'a> {
     pub fn next_i(&mut self) -> Option<(usize, char)> {
         self.it.next()
     }
+    pub fn eoi(&self) -> bool {
+        self.it.clone().next().is_none()
+    }
 }
 
 impl<'a> Iterator for PIter<'a> {

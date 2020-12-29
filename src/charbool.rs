@@ -265,7 +265,7 @@ pub fn do_chars<'a, CB: CharBool>(
         let it2 = it.clone();
         match it.next() {
             Some(c) if cb.char_bool(c) => {
-                println!("do_chars CHAR = {}", c);
+                //println!("do_chars CHAR = {}", c);
                 done += 1;
                 if done == min && exact {
                     return Ok((it, (), None));

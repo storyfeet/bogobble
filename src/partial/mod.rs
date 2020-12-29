@@ -1,6 +1,13 @@
 use crate::traits::*;
 use crate::EOI;
 pub mod charbool;
+pub use traits::*;
+pub mod mark_list;
+pub mod p_repeat;
+pub mod traits {
+    pub use super::charbool::PartCharBool;
+}
+pub use p_repeat::*;
 
 #[derive(Debug, Clone)]
 pub struct PosTree<I> {
@@ -12,7 +19,7 @@ pub struct PosTree<I> {
 }
 
 impl<I> PosTree<I> {
-    fn new(start: Option<usize>, fin: Option<usize>, item: I) -> Self {
+    pub fn new(start: Option<usize>, fin: Option<usize>, item: I) -> Self {
         PosTree {
             start,
             fin,
@@ -83,12 +90,20 @@ where
 {
     type Out = PosTree<I>;
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, PosTree<I>> {
+        if it.eoi() {
+            return Ok((
+                it.clone(),
+                PosTree::new(it.index(), it.index(), self.i.clone()),
+                None,
+            ));
+        }
         let (i1, p1, _) = self.a.parse(it)?;
+
         match self.b.parse(&i1) {
             Ok((i2, p2, e2)) => Ok((i2, p1.merge(self.i.clone(), p2), e2)),
-            Err(e2) => match EOI.parse(&i1) {
-                Ok((i2, _, _)) => Ok((i2, p1.as_child(self.i.clone()).incomplete(), None)),
-                Err(_) => Err(e2),
+            Err(e2) => match i1.eoi() {
+                true => Ok((i1, p1.as_child(self.i.clone()).incomplete(), None)),
+                false => Err(e2),
             },
         }
     }
@@ -211,10 +226,13 @@ impl<'a, P: Parser<'a, Out = Vec<PosTree<I>>>, I: Clone> Parser<'a> for PosVecPa
         self.p
             .parse(it)
             .map(|(i2, vc, e)| {
-                let complete = vc
-                    .get(vc.len() - 1)
-                    .map(|c| c.complete)
-                    .unwrap_or_else(|| EOI.parse(&i2).is_ok());
+                let complete = match vc.len() {
+                    0 => false,
+                    n => vc
+                        .get(n - 1)
+                        .map(|c| c.complete)
+                        .unwrap_or_else(|| EOI.parse(&i2).is_ok()),
+                };
                 let res = PosTree {
                     start: it.index(),
                     fin: i2.index(),

@@ -2,7 +2,7 @@ use super::PosTree;
 use crate::traits::*;
 
 pub trait PartCharBool: CharBool + Sized {
-    fn p_until<'a, P: Parser<'a, Out = PosTree<I>>, I: Clone + Default>(
+    fn p_until<'a, P: Parser<'a, Out = PosTree<I>>, I: Clone>(
         self,
         p: P,
         i: I,
