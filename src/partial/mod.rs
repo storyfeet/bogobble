@@ -12,6 +12,16 @@ pub struct PosTree<I> {
 }
 
 impl<I> PosTree<I> {
+    fn new(start: Option<usize>, fin: Option<usize>, item: I) -> Self {
+        PosTree {
+            start,
+            fin,
+            item,
+            complete: true,
+            children: Vec::new(),
+        }
+    }
+
     fn merge(self, item: I, b: Self) -> Self {
         PosTree {
             start: self.start,
