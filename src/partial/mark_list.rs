@@ -23,7 +23,7 @@ pub fn mark_str<I: Clone + Display>(t: &PosTree<I>, s: &str) -> Result<String, M
 
 struct MarkList<I>(BTreeMap<usize, I>);
 
-impl<I: Clone + Display> MarkList<I> {
+impl<I: Clone> MarkList<I> {
     pub fn new(t: &PosTree<I>, end: Option<&I>) -> Self {
         let mut res = MarkList(BTreeMap::new());
         res.set_marks(t, end);
@@ -42,7 +42,7 @@ impl<I: Clone + Display> MarkList<I> {
         }
     }
 
-    pub fn mark_str(&mut self, s: &str) -> Result<String, MarkErr> {
+    pub fn mark_str_with<F: Fn(&I) -> String>(&mut self, s: &str, f: F) -> Result<String, MarkErr> {
         let mut res = String::new();
 
         let mut last_i = 0;
@@ -52,12 +52,18 @@ impl<I: Clone + Display> MarkList<I> {
                 res,
                 "{}{}",
                 s.get(last_i..*k).ok_or(MarkErr::OutOfBounds)?,
-                m
+                f(m),
             )
             .ok();
             last_i = *k;
         }
         res.push_str(&s[last_i..]);
         Ok(res)
+    }
+}
+
+impl<I: Clone + Display> MarkList<I> {
+    pub fn mark_str(&mut self, s: &str) -> Result<String, MarkErr> {
+        self.mark_str_with(s, |i| i.to_string())
     }
 }

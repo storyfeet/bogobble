@@ -11,8 +11,8 @@ pub use p_repeat::*;
 
 #[derive(Debug, Clone)]
 pub struct PosTree<I> {
-    start: Option<usize>,
-    fin: Option<usize>,
+    pub start: Option<usize>,
+    pub fin: Option<usize>,
     pub complete: bool,
     pub item: I,
     pub children: Vec<PosTree<I>>,
@@ -73,6 +73,19 @@ impl<I> PosTree<I> {
 
     pub fn str_len(&self, s: &str) -> usize {
         self.on_str(s).len()
+    }
+
+    pub fn find_at_end<F: Fn(&I) -> bool>(&self, s: &str, f: F) -> Option<&Self> {
+        if f(&self.item) {
+            return Some(&self);
+        }
+        let mut res = None;
+        for x in &self.children {
+            if x.complete && x.start != None {
+                res = Some(x)
+            }
+        }
+        res.and_then(|r| r.find_at_end(s, f))
     }
 }
 
