@@ -1,12 +1,16 @@
 use crate::traits::*;
 use crate::EOI;
 pub mod charbool;
+pub mod ranger;
 pub use traits::*;
 pub mod mark_list;
 pub mod p_repeat;
+use ranger::Ranger;
 pub mod traits {
     pub use super::charbool::PartCharBool;
+    pub use super::ranger::*;
 }
+
 pub use p_repeat::*;
 
 #[derive(Debug, Clone)]
@@ -87,6 +91,15 @@ impl<I> PosTree<I> {
         }
         res.and_then(|r| r.find_at_end(s, f))
     }
+
+    pub fn range(&self) -> Ranger {
+        match (&self.start, &self.fin) {
+            (Some(s), Some(e)) => Ranger::InEx(*s, *e),
+            (Some(s), None) => Ranger::InOpen(*s),
+            (None, Some(e)) => Ranger::InEx(0, *e),
+            _ => Ranger::InOpen(0),
+        }
+    }
 }
 
 pub struct Merger<A, B, I> {
@@ -163,6 +176,41 @@ pub trait Pushable<I>: Sized {
 impl<'b, A: Parser<'b, Out = PosTree<I>>, I: Clone> Pushable<I> for A {
     fn push<'a, B: Parser<'a, Out = PosTree<I>>>(self, b: B) -> Pusher<Self, B> {
         Pusher { a: self, b }
+    }
+}
+
+pub struct OPusher<A, B> {
+    a: A,
+    b: B,
+}
+
+pub trait OPushable<I>: Sized {
+    fn push<'a, B: Parser<'a, Out = Option<PosTree<I>>>>(self, b: B) -> OPusher<Self, B>;
+}
+
+impl<'b, A: Parser<'b, Out = PosTree<I>>, I: Clone> OPushable<I> for A {
+    fn push<'a, B: Parser<'a, Out = Option<PosTree<I>>>>(self, b: B) -> OPusher<Self, B> {
+        OPusher { a: self, b }
+    }
+}
+
+impl<'a, A, B, I> Parser<'a> for OPusher<A, B>
+where
+    A: Parser<'a, Out = PosTree<I>>,
+    B: Parser<'a, Out = Option<PosTree<I>>>,
+    I: Clone,
+{
+    type Out = PosTree<I>;
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, PosTree<I>> {
+        let (i1, p1, _) = self.a.parse(it)?;
+        match self.b.parse(&i1) {
+            Ok((i2, Some(p2), e2)) => Ok((i2, p1.push(p2), e2)),
+            Ok((i2, None, e2)) => Ok((i2, p1, e2)),
+            Err(e2) => match EOI.parse(&i1) {
+                Ok((i2, _, _)) => Ok((i2, p1.incomplete(), None)),
+                Err(_) => Err(e2),
+            },
+        }
     }
 }
 

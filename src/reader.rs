@@ -86,6 +86,10 @@ pub fn ws_<P: OParser<V>, V>(p: P) -> impl OParser<V> {
     last(WS.istar(), p)
 }
 
+pub fn wn_<P: OParser<V>, V>(p: P) -> impl OParser<V> {
+    last(" \t\n\r".istar(), p)
+}
+
 pub fn do_keyword<'a, P: Parser<'a>>(it: &PIter<'a>, p: &P) -> ParseRes<'a, P::Out> {
     let (t2, r, _) = p.parse(it)?;
     match t2.clone().next() {
