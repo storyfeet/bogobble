@@ -185,11 +185,11 @@ pub struct OPusher<A, B> {
 }
 
 pub trait OPushable<I>: Sized {
-    fn push<'a, B: Parser<'a, Out = Option<PosTree<I>>>>(self, b: B) -> OPusher<Self, B>;
+    fn opush<'a, B: Parser<'a, Out = Option<PosTree<I>>>>(self, b: B) -> OPusher<Self, B>;
 }
 
 impl<'b, A: Parser<'b, Out = PosTree<I>>, I: Clone> OPushable<I> for A {
-    fn push<'a, B: Parser<'a, Out = Option<PosTree<I>>>>(self, b: B) -> OPusher<Self, B> {
+    fn opush<'a, B: Parser<'a, Out = Option<PosTree<I>>>>(self, b: B) -> OPusher<Self, B> {
         OPusher { a: self, b }
     }
 }
