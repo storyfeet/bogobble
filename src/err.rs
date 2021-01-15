@@ -131,6 +131,11 @@ impl<'a> PErr<'a> {
         }
     }
 
+    pub fn brk(mut self) -> Self {
+        self.is_break = true;
+        self
+    }
+
     pub fn join(mut self, mut b: Self) -> Self {
         match compare_index(&self.index, &b.index) {
             Ordering::Greater => {

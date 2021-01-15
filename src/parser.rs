@@ -87,6 +87,10 @@ pub trait Parser<'a>: Sized {
     fn ig(self) -> Ig<Self> {
         Ig { a: self }
     }
+
+    fn brk(self) -> Break<Self> {
+        Break { a: self }
+    }
 }
 
 impl<'a, F, V> Parser<'a> for F
@@ -122,5 +126,16 @@ impl<'a> Parser<'a> for char {
             Some(ic) if ic == *self => Ok((it, ic, None)),
             _ => return Err(i.err(Expected::Char(*self))),
         }
+    }
+}
+
+pub struct Break<A> {
+    a: A,
+}
+
+impl<'a, A: Parser<'a>> Parser<'a> for Break<A> {
+    type Out = A::Out;
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, A::Out> {
+        self.a.parse(it).map_err(|e| e.brk())
     }
 }
