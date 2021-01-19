@@ -11,6 +11,7 @@ pub mod traits {
     pub use super::ranger::*;
 }
 
+pub use charbool::*;
 pub use p_repeat::*;
 
 #[derive(Debug, Clone)]

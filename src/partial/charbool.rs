@@ -1,6 +1,23 @@
 use super::PosTree;
 use crate::traits::*;
 
+pub struct S(pub &'static str);
+
+impl<'a> Parser<'a> for S {
+    type Out = &'static str;
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        let mut i2 = it.clone();
+        for c in self.0.chars() {
+            match i2.next() {
+                None => return Ok((i2, self.0, None)),
+                Some(nc) if nc == c => {}
+                _ => return Err(i2.err_s(self.0)),
+            }
+        }
+        Ok((i2, self.0, None))
+    }
+}
+
 pub trait PartCharBool: CharBool + Sized {
     fn p_until<'a, P: Parser<'a, Out = PosTree<I>>, I: Clone>(
         self,

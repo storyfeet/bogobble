@@ -179,11 +179,6 @@ pub fn p_plus<'a, A: Parser<'a>>(a: A) -> PPlus<A> {
     PPlus { a }
 }
 
-pub struct PPlusUntil<A, B> {
-    a: A,
-    b: B,
-}
-
 #[cfg(test)]
 pub mod test {
     use super::*;
