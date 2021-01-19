@@ -73,6 +73,11 @@ pub trait Parser<'a>: Sized {
         or(self, b)
     }
 
+    ///Borrowed Parser
+    fn br(&self) -> BRP<Self> {
+        BRP(self)
+    }
+
     fn asv<V: Clone>(self, v: V) -> Asv<Self, V> {
         asv(self, v)
     }
@@ -126,6 +131,15 @@ impl<'a> Parser<'a> for char {
             Some(ic) if ic == *self => Ok((it, ic, None)),
             _ => return Err(i.err(Expected::Char(*self))),
         }
+    }
+}
+
+///borrow Parser Uses Newtype to get around conflicting types
+pub struct BRP<'b, P>(pub &'b P);
+impl<'a, 'b, P: Parser<'a>> Parser<'a> for BRP<'b, P> {
+    type Out = P::Out;
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        self.0.parse(it)
     }
 }
 
