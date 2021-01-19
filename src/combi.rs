@@ -74,10 +74,9 @@ where
 {
     type Out = B::Out;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        let (i, _, c1) = self.a.parse(i)?;
-        let (i, res, c2) = self.b.parse(&i).join_err_op(c1)?;
-        let (n, _, c3) = self.a.parse(&i).join_err_op(c2)?;
-        Ok((n, res, c3))
+        (self.a.br(), self.b.br(), self.a.br())
+            .parse(i)
+            .map_v(|(_, b, _)| b)
     }
 }
 
@@ -93,7 +92,7 @@ impl<'a, P: Parser<'a, Out = V>, V: Debug> Parser<'a> for FailOn<P> {
     type Out = ();
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, ()> {
         match self.p.parse(it) {
-            Ok((_, _, _)) => it.err_r(Expected::Str("Failon Succeeded")),
+            Ok(_) => it.err_r(Expected::Str("Failon Succeeded")),
             Err(_) => Ok((it.clone(), (), None)),
         }
     }
