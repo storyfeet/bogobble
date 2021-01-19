@@ -22,10 +22,9 @@ where
 {
     type Out = (A::Out, B::Out, C::Out);
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        let (it2, av, c1) = self.0.parse(it)?;
-        let (it3, bv, c2) = self.1.parse(&it2).join_err_op(c1)?;
-        let (it4, cv, c3) = self.2.parse(&it3).join_err_op(c2)?;
-        Ok((it4, (av, bv, cv), c3))
+        ((self.0.br(), self.1.br()), self.2.br())
+            .parse(it)
+            .map_v(|((a, b), c)| (a, b, c))
     }
 }
 
@@ -38,11 +37,9 @@ where
 {
     type Out = (A::Out, B::Out, C::Out, D::Out);
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        let (it2, av, c1) = self.0.parse(it)?;
-        let (it3, bv, c2) = self.1.parse(&it2).join_err_op(c1)?;
-        let (it4, cv, c3) = self.2.parse(&it3).join_err_op(c2)?;
-        let (it5, dv, c4) = self.3.parse(&it4).join_err_op(c3)?;
-        Ok((it5, (av, bv, cv, dv), c4))
+        ((self.0.br(), self.1.br()), (self.2.br(), self.3.br()))
+            .parse(it)
+            .map_v(|((a, b), (c, d))| (a, b, c, d))
     }
 }
 impl<'a, A, B, C, D, E> Parser<'a> for (A, B, C, D, E)
@@ -54,13 +51,13 @@ where
     E: Parser<'a>,
 {
     type Out = (A::Out, B::Out, C::Out, D::Out, E::Out);
-    fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        let (it, av, c) = self.0.parse(i)?;
-        let (it, bv, c) = self.1.parse(&it).join_err_op(c)?;
-        let (it, cv, c) = self.2.parse(&it).join_err_op(c)?;
-        let (it, dv, c) = self.3.parse(&it).join_err_op(c)?;
-        let (it, ev, c) = self.4.parse(&it).join_err_op(c)?;
-        Ok((it, (av, bv, cv, dv, ev), c))
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        (
+            (self.0.br(), self.1.br(), self.2.br()),
+            (self.3.br(), self.4.br()),
+        )
+            .parse(it)
+            .map_v(|((a, b, c), (d, e))| (a, b, c, d, e))
     }
 }
 impl<'a, A, B, C, D, E, F> Parser<'a> for (A, B, C, D, E, F)
@@ -74,13 +71,12 @@ where
 {
     type Out = (A::Out, B::Out, C::Out, D::Out, E::Out, F::Out);
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        let (it2, av, c) = self.0.parse(it)?;
-        let (it3, bv, c) = self.1.parse(&it2).join_err_op(c)?;
-        let (it4, cv, c) = self.2.parse(&it3).join_err_op(c)?;
-        let (it5, dv, c) = self.3.parse(&it4).join_err_op(c)?;
-        let (it6, ev, c) = self.4.parse(&it5).join_err_op(c)?;
-        let (it7, fv, c) = self.5.parse(&it6).join_err_op(c)?;
-        Ok((it7, (av, bv, cv, dv, ev, fv), c))
+        (
+            (self.0.br(), self.1.br(), self.2.br()),
+            (self.3.br(), self.4.br(), self.5.br()),
+        )
+            .parse(it)
+            .map_v(|((a, b, c), (d, e, f))| (a, b, c, d, e, f))
     }
 }
 
