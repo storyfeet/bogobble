@@ -34,13 +34,24 @@ impl<I> PosTree<I> {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.fin == self.start
+    }
+
     fn merge(self, item: I, b: Self) -> Self {
+        let start = self.start;
+        let fin = b.fin;
+        let complete = self.complete && b.complete;
+        let children = match b.is_empty() {
+            true => vec![self],
+            false => vec![self, b],
+        };
         PosTree {
-            start: self.start,
-            fin: b.fin,
-            complete: b.complete,
+            start,
+            fin,
+            complete,
             item,
-            children: vec![self, b],
+            children,
         }
     }
 
@@ -61,8 +72,10 @@ impl<I> PosTree<I> {
     }
 
     pub fn push(mut self, b: Self) -> Self {
-        self.fin = b.fin;
-        self.children.push(b);
+        if !b.is_empty() {
+            self.fin = b.fin;
+            self.children.push(b);
+        }
         self
     }
 
