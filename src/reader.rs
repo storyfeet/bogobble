@@ -78,12 +78,25 @@ pub struct WS__<P> {
 impl<'a, P: Parser<'a>> Parser<'a> for WS__<P> {
     type Out = P::Out;
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        WS.istar().parse(it).ig_then(&self.p).then_ig(&(WS.istar()))
+        (WS.istar(), self.p.br(), WS.istar())
+            .map(|(_, b, _)| b)
+            .parse(it)
     }
 }
 
-pub fn ws_<P: OParser<V>, V>(p: P) -> impl OParser<V> {
-    last(WS.istar(), p)
+pub struct WS_<P> {
+    pub p: P,
+}
+
+impl<'a, P: Parser<'a>> Parser<'a> for WS_<P> {
+    type Out = P::Out;
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        last(WS.istar(), self.p.br()).parse(it)
+    }
+}
+
+pub fn ws_<P>(p: P) -> WS_<P> {
+    WS_ { p }
 }
 
 pub fn wn_<P: OParser<V>, V>(p: P) -> impl OParser<V> {

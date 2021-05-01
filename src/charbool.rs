@@ -6,6 +6,7 @@ use crate::parser::*;
 
 pub trait CharBool: Sized {
     fn char_bool(&self, c: char) -> bool;
+
     fn expected(&self) -> Expected {
         Expected::Str(std::any::type_name::<Self>())
     }
@@ -239,7 +240,7 @@ pub fn do_one_char<'a, CB: CharBool>(i: &PIter<'a>, cb: &CB) -> ParseRes<'a, cha
 }
 
 pub struct OneChar<CB: CharBool> {
-    cb: CB,
+    pub cb: CB,
 }
 
 impl<'a, CB: CharBool> Parser<'a> for OneChar<CB> {
@@ -284,7 +285,7 @@ pub fn do_chars<'a, CB: CharBool>(
 }
 
 pub struct ICharStar<C: CharBool> {
-    cb: C,
+    pub cb: C,
 }
 impl<'a, CB: CharBool> Parser<'a> for ICharStar<CB> {
     type Out = ();
