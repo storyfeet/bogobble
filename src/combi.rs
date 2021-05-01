@@ -91,19 +91,17 @@ where
 impl<'a, P: Parser<'a, Out = V>, V: Debug> Parser<'a> for FailOn<P> {
     type Out = ();
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, ()> {
-        match self.p.parse(it) {
+        match self.0.parse(it) {
             Ok(_) => it.err_r(Expected::Str("Failon Succeeded")),
             Err(_) => Ok((it.clone(), (), None)),
         }
     }
 }
 
-pub struct FailOn<P> {
-    p: P,
-}
+pub struct FailOn<P>(pub P);
 
 pub fn fail_on<'a, P: Parser<'a>>(p: P) -> FailOn<P> {
-    FailOn { p }
+    FailOn(p)
 }
 
 #[derive(PartialEq, Debug, Clone)]

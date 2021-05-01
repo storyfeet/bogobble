@@ -108,13 +108,11 @@ pub fn do_keyword<'a, P: Parser<'a>>(it: &PIter<'a>, p: &P) -> ParseRes<'a, P::O
 impl<'a, P: Parser<'a>> Parser<'a> for KeyWord<P> {
     type Out = P::Out;
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, P::Out> {
-        do_keyword(it, &self.p)
+        do_keyword(it, &self.0)
     }
 }
 
-pub struct KeyWord<P> {
-    p: P,
-}
+pub struct KeyWord<P>(pub P);
 
 ///```rust
 /// use bogobble::*;
@@ -124,7 +122,7 @@ pub struct KeyWord<P> {
 /// assert!(keyword("let").parse_s("letl").is_err());
 ///```
 pub fn keyword<'a, P: Parser<'a>>(p: P) -> KeyWord<P> {
-    KeyWord { p }
+    KeyWord(p)
 }
 
 parser! {(EOI->())

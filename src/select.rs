@@ -87,8 +87,8 @@ where
 }
 
 pub struct Or<A, B> {
-    a: A,
-    b: B,
+    pub a: A,
+    pub b: B,
 }
 impl<'a, A, B, V> Parser<'a> for Or<A, B>
 where
