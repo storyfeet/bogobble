@@ -68,39 +68,44 @@ pub fn pos<'a, P: Parser<'a>>(p: P) -> PPos<P> {
 }
 
 pub fn ws__<P: OParser<V>, V>(p: P) -> WS__<P> {
-    WS__ { p }
+    WS__(p)
 }
 
-pub struct WS__<P> {
-    p: P,
-}
+pub struct WS__<P>(pub P);
 
 impl<'a, P: Parser<'a>> Parser<'a> for WS__<P> {
     type Out = P::Out;
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        (WS.istar(), self.p.br(), WS.istar())
+        (WS.istar(), self.0.br(), WS.istar())
             .map(|(_, b, _)| b)
             .parse(it)
     }
 }
 
-pub struct WS_<P> {
-    pub p: P,
-}
+pub struct WS_<P>(pub P);
 
 impl<'a, P: Parser<'a>> Parser<'a> for WS_<P> {
     type Out = P::Out;
     fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        last(WS.istar(), self.p.br()).parse(it)
+        last(WS.istar(), self.0.br()).parse(it)
     }
 }
 
 pub fn ws_<P>(p: P) -> WS_<P> {
-    WS_ { p }
+    WS_(p)
 }
 
 pub fn wn_<P: OParser<V>, V>(p: P) -> impl OParser<V> {
     last(" \t\n\r".istar(), p)
+}
+
+pub struct WN_<P>(pub P);
+
+impl<'a, P: Parser<'a>> Parser<'a> for WN_<P> {
+    type Out = P::Out;
+    fn parse(&self, it: &PIter<'a>) -> ParseRes<'a, Self::Out> {
+        last(" \t\n\r".istar(), self.0.br()).parse(it)
+    }
 }
 
 pub fn do_keyword<'a, P: Parser<'a>>(it: &PIter<'a>, p: &P) -> ParseRes<'a, P::Out> {

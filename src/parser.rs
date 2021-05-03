@@ -5,19 +5,28 @@ use crate::select::*;
 
 pub type ParseRes<'a, V> = Result<(PIter<'a>, V, Option<PErr<'a>>), PErr<'a>>;
 
-pub trait ResTrait<'a>: Sized {
-    type Val;
-    fn map_v<F: Fn(Self::Val) -> R, R>(self, f: F) -> ParseRes<'a, R>;
-    fn map_str(self, start: &PIter<'a>) -> ParseRes<'a, &'a str>;
-    fn map_string(self, start: &PIter<'a>) -> ParseRes<'a, String> {
-        self.map_str(start).map(|(i, v, e)| (i, v.to_string(), e))
-    }
+pub trait ErrJoin<'a>: Sized {
     fn join_err(self, e: PErr<'a>) -> Self;
     fn join_err_op(self, e: Option<PErr<'a>>) -> Self {
         match e {
             Some(e) => self.join_err(e),
             None => self,
         }
+    }
+}
+
+impl<'a, V> ErrJoin<'a> for ParseRes<'a, V> {
+    fn join_err(self, e2: PErr<'a>) -> Self {
+        self.map_err(|e| e.join(e2))
+    }
+}
+
+pub trait ResTrait<'a>: Sized {
+    type Val;
+    fn map_v<F: Fn(Self::Val) -> R, R>(self, f: F) -> ParseRes<'a, R>;
+    fn map_str(self, start: &PIter<'a>) -> ParseRes<'a, &'a str>;
+    fn map_string(self, start: &PIter<'a>) -> ParseRes<'a, String> {
+        self.map_str(start).map(|(i, v, e)| (i, v.to_string(), e))
     }
     fn then<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, (Self::Val, P::Out)>;
     fn then_ig<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, Self::Val>;
@@ -34,9 +43,6 @@ impl<'a, V> ResTrait<'a> for ParseRes<'a, V> {
             let s = start.str_to(i2.index());
             (i2, s, e)
         })
-    }
-    fn join_err(self, e2: PErr<'a>) -> Self {
-        self.map_err(|e| e.join(e2))
     }
     fn then<P: Parser<'a>>(self, p: &P) -> ParseRes<'a, (V, P::Out)> {
         match self {

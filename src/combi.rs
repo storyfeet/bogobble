@@ -4,9 +4,7 @@ use crate::parser::*;
 use std::fmt::Debug;
 
 #[derive(Clone)]
-pub struct Maybe<A> {
-    p: A,
-}
+pub struct Maybe<A>(pub A);
 
 impl<'a, A> Parser<'a> for Maybe<A>
 where
@@ -14,7 +12,7 @@ where
 {
     type Out = Option<A::Out>;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        match self.p.parse(i) {
+        match self.0.parse(i) {
             Ok((ir, v, ex)) => Ok((ir, Some(v), ex)),
             Err(e) => Ok((i.clone(), None, Some(e))),
         }
@@ -40,7 +38,7 @@ where
 /// assert_eq!(s,34);
 /// ```
 pub fn maybe<'a, P: Parser<'a>>(p: P) -> Maybe<P> {
-    Maybe { p }
+    Maybe(p)
 }
 
 pub struct Exists<P> {

@@ -148,35 +148,31 @@ pub fn do_rep<'a, A: Parser<'a>>(
 }
 
 #[derive(Clone)]
-pub struct PRepStar<A> {
-    a: A,
-}
+pub struct PStar<A>(pub A);
 
-impl<'a, A: Parser<'a>> Parser<'a> for PRepStar<A> {
+impl<'a, A: Parser<'a>> Parser<'a> for PStar<A> {
     type Out = Vec<A::Out>;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_rep(i, &self.a, 0, false)
+        do_rep(i, &self.0, 0, false)
     }
 }
 
-pub fn p_star<'a, A: Parser<'a>>(a: A) -> PRepStar<A> {
-    PRepStar { a }
+pub fn p_star<'a, A: Parser<'a>>(a: A) -> PStar<A> {
+    PStar(a)
 }
 
 #[derive(Clone)]
-pub struct PPlus<A> {
-    a: A,
-}
+pub struct PPlus<A>(pub A);
 
 impl<'a, A: Parser<'a>> Parser<'a> for PPlus<A> {
     type Out = Vec<A::Out>;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_rep(i, &self.a, 1, false)
+        do_rep(i, &self.0, 1, false)
     }
 }
 
 pub fn p_plus<'a, A: Parser<'a>>(a: A) -> PPlus<A> {
-    PPlus { a }
+    PPlus(a)
 }
 
 #[cfg(test)]
