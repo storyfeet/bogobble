@@ -14,7 +14,7 @@ pub trait CharBool: Sized {
         OneChar { cb: self }
     }
     fn star(self) -> CharStar<Self> {
-        CharStar { cb: self }
+        CharStar(self)
     }
     /// min_n not min to avoid ambiguity with std::cmp::Ord
     fn min_n(self, min: usize) -> CharMin<Self> {
@@ -22,14 +22,14 @@ pub trait CharBool: Sized {
     }
 
     fn plus(self) -> CharPlus<Self> {
-        CharPlus { cb: self }
+        CharPlus(self)
     }
 
     fn istar(self) -> ICharStar<Self> {
-        ICharStar { cb: self }
+        ICharStar(self)
     }
     fn iplus(self) -> ICharPlus<Self> {
-        ICharPlus { cb: self }
+        ICharPlus(self)
     }
 
     fn iexact(self, n: usize) -> ICharExact<Self> {
@@ -284,23 +284,21 @@ pub fn do_chars<'a, CB: CharBool>(
     }
 }
 
-pub struct ICharStar<C: CharBool> {
-    pub cb: C,
-}
+pub struct ICharStar<C: CharBool>(pub C);
+
 impl<'a, CB: CharBool> Parser<'a> for ICharStar<CB> {
     type Out = ();
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_chars(i, &self.cb, 0, false)
+        do_chars(i, &self.0, 0, false)
     }
 }
 
-pub struct ICharPlus<C: CharBool> {
-    cb: C,
-}
+pub struct ICharPlus<C: CharBool>(pub C);
+
 impl<'a, CB: CharBool> Parser<'a> for ICharPlus<CB> {
     type Out = ();
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_chars(i, &self.cb, 1, false)
+        do_chars(i, &self.0, 1, false)
     }
 }
 
@@ -315,26 +313,22 @@ impl<'a, CB: CharBool> Parser<'a> for ICharExact<CB> {
     }
 }
 #[derive(Clone)]
-pub struct CharStar<C: CharBool> {
-    cb: C,
-}
+pub struct CharStar<C: CharBool>(pub C);
 
 impl<'a, CB: CharBool> Parser<'a> for CharStar<CB> {
     type Out = &'a str;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_chars(i, &self.cb, 0, false).map_str(i)
+        do_chars(i, &self.0, 0, false).map_str(i)
     }
 }
 
 #[derive(Clone)]
-pub struct CharPlus<C: CharBool> {
-    cb: C,
-}
+pub struct CharPlus<C: CharBool>(pub C);
 
 impl<'a, CB: CharBool> Parser<'a> for CharPlus<CB> {
     type Out = &'a str;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, &'a str> {
-        do_chars(i, &self.cb, 1, false).map_str(i)
+        do_chars(i, &self.0, 1, false).map_str(i)
     }
 }
 

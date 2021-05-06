@@ -186,35 +186,31 @@ pub fn do_rep<'a, A: Parser<'a>>(
 }
 
 #[derive(Clone)]
-pub struct RepStar<A> {
-    a: A,
-}
+pub struct Star<A>(pub A);
 
-impl<'a, A: Parser<'a>> Parser<'a> for RepStar<A> {
+impl<'a, A: Parser<'a>> Parser<'a> for Star<A> {
     type Out = Vec<A::Out>;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_rep(i, &self.a, 0, false)
+        do_rep(i, &self.0, 0, false)
     }
 }
 
-pub fn star<'a, A: Parser<'a>>(a: A) -> RepStar<A> {
-    RepStar { a }
+pub fn star<'a, A: Parser<'a>>(a: A) -> Star<A> {
+    Star(a)
 }
 
 #[derive(Clone)]
-pub struct RepPlus<A> {
-    a: A,
-}
+pub struct Plus<A>(pub A);
 
-impl<'a, A: Parser<'a>> Parser<'a> for RepPlus<A> {
+impl<'a, A: Parser<'a>> Parser<'a> for Plus<A> {
     type Out = Vec<A::Out>;
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_rep(i, &self.a, 1, false)
+        do_rep(i, &self.0, 1, false)
     }
 }
 
-pub fn plus<'a, A: Parser<'a>>(a: A) -> RepPlus<A> {
-    RepPlus { a }
+pub fn plus<'a, A: Parser<'a>>(a: A) -> Plus<A> {
+    Plus(a)
 }
 
 fn do_repeat_until<'a, A: Parser<'a>, B: Parser<'a>>(
@@ -265,15 +261,12 @@ impl<'a, A: Parser<'a>, B: Parser<'a>> Parser<'a> for StarUntil<A, B> {
     }
 }
 
-pub struct PlusUntil<A, B> {
-    a: A,
-    b: B,
-}
+pub struct PlusUntil<A, B>(pub A, pub B);
 
 impl<'a, A: Parser<'a>, B: Parser<'a>> Parser<'a> for PlusUntil<A, B> {
     type Out = (Vec<A::Out>, B::Out);
     fn parse(&self, i: &PIter<'a>) -> ParseRes<'a, Self::Out> {
-        do_repeat_until(i, 1, &self.a, &self.b)
+        do_repeat_until(i, 1, &self.0, &self.1)
     }
 }
 
@@ -281,7 +274,7 @@ pub fn star_until<'a, A: Parser<'a>, B: Parser<'a>>(a: A, b: B) -> StarUntil<A, 
     StarUntil { a, b }
 }
 pub fn plus_until<'a, A: Parser<'a>, B: Parser<'a>>(a: A, b: B) -> PlusUntil<A, B> {
-    PlusUntil { a, b }
+    PlusUntil(a, b)
 }
 
 pub fn star_until_ig<'a, A: Parser<'a>, B: Parser<'a>, F: Fn((Vec<A::Out>, B::Out)) -> A::Out>(
